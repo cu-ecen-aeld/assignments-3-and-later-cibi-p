@@ -10,7 +10,7 @@ WRITESTRING=$2
 
 DIRPATH=$(dirname $FILEPATH)
 if [ ! -d $DIRPATH ]; then
-  mkdir $DIRPATH
+  mkdir "$DIRPATH" -p
 fi
 
-echo $WRITESTRING >$FILEPATH
+echo $WRITESTRING > "$FILEPATH"
