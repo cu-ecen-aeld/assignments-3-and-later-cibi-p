@@ -16,8 +16,9 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
+    bool ret = true;
+    ret = !(system(cmd));
+    return ret;
 }
 
 /**
@@ -40,6 +41,9 @@ bool do_exec(int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+    bool ret = true;
+    int pid = 0;
+    int wstatus = 0;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
@@ -47,8 +51,7 @@ bool do_exec(int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
-
+    //command[count] = command[count];
 /*
  * TODO:
  *   Execute a system command by calling fork, execv(),
@@ -58,10 +61,36 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    if (command[0][0] != '/') {
+    return false;
+    }
+    pid = fork();
+    if (pid < 0) {
+      ret = false;
+      printf("cbdgb %d",__LINE__);
+      goto exit;
+    }
+    if (pid == 0) {
+      // child process
+      execv(command[0], command);  // This function only return when the error occurs
+      _exit(EXIT_FAILURE);
+    }
+    else {
+     if (wait(&wstatus) == -1) {
+      ret = false;
+      printf("cbdgb %d",__LINE__);
+      goto exit;
+     }
+     if (WEXITSTATUS(wstatus) != 0) {
+        ret = false;
+        goto exit;
+      }
+    }
 
+exit:
     va_end(args);
 
-    return true;
+    return ret;
 }
 
 /**
@@ -74,7 +103,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     va_list args;
     va_start(args, count);
     char * command[count+1];
-    int i;
+    int i, fd=0;
+    int pid, wstatus;
+    bool ret = true;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
@@ -83,8 +114,6 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
     command[count] = command[count];
-
-
 /*
  * TODO
  *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
@@ -92,8 +121,39 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    pid = fork();
+    if (pid < 0) {
+      ret = false;
+      goto exit;
+    }
+    if (pid == 0) {
+      // child process
+      fd = open(outputfile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+      if (fd < 0) {
+            printf("cbdgb %d*****", __LINE__);
+        ret = false;
+        goto exit;
+      }
+      if (dup2(fd, STDOUT_FILENO) == -1) {
+            printf("cbdgb %d*****", __LINE__);
+        ret = false;
+        goto exit;
+      }
+      close(fd);
+      execv(command[0], command);  // This function only return when the error occurs
+    }
+      else {
+        if (wait(&wstatus) == -1) {
+          printf("cbdgb %d*****", __LINE__);
+          ret = false;
+          goto exit;
+        }
+      }
 
+exit:
     va_end(args);
 
-    return true;
+    return ret;
 }
+
+
