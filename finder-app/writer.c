@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   int ret           = SUCCESS;
   FILE *fptr        = NULL;
 
-  openlog(NULL, "", LOG_USER);
+  openlog(NULL, LOG_PID, LOG_USER);
 
   if (argc < 3) {
     syslog(LOG_ERR, "Requires two arguments");
